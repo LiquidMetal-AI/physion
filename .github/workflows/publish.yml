@@ -84,7 +84,7 @@ jobs:
           set -euo pipefail
           cd dist
           test -f SHA256SUMS || { echo "::error::the release has no SHA256SUMS"; exit 1; }
-          for f in "physion-$V-linux-x86_64.tar.gz" "physion-$V-linux-aarch64.tar.gz" "physion-$V-darwin-universal.tar.gz" "physion-$V.spdx.json"; do
+          for f in "physion-$V-linux-x86_64.tar.gz" "physion-$V-linux-aarch64.tar.gz" "physion-$V-darwin-arm64.tar.gz" "physion-$V.spdx.json"; do
             test -f "$f" || { echo "::error::the release has no $f"; exit 1; }
           done
           # every file but SHA256SUMS is listed, and matches its line
