@@ -1,0 +1,42 @@
+Physion License
+
+Copyright (c) 2025-2026 LiquidMetal AI, Inc. All rights reserved.
+
+Physion, including its binaries, libraries, model files, documentation,
+examples, feed handlers and client libraries (the "Software"), is
+proprietary to LiquidMetal AI, Inc. ("LiquidMetal"). The Software is
+licensed, not sold.
+
+1. Permission. You may install and use the Software only if LiquidMetal has
+   given you permission in writing (for example, a signed agreement or a
+   license key issued to you). You may use it only within the scope and for
+   the period of that permission.
+
+2. Restrictions. Unless LiquidMetal agrees in writing, you may not:
+   (a) copy the Software, except as necessary to use it as permitted;
+   (b) distribute, sublicense, sell, rent, lend, publish or otherwise make
+       the Software available to any third party;
+   (c) reverse engineer, decompile or disassemble the Software, except to
+       the extent that applicable law permits this despite this limitation;
+   (d) remove, change or bypass any notice, license key or license check;
+   (e) use the Software to build a competing product.
+
+3. Ownership. LiquidMetal keeps all rights, title and interest in the
+   Software. All rights not expressly granted are reserved.
+
+4. Termination. Your permission ends when its period ends, or when
+   LiquidMetal gives you notice. When it ends, you must stop using the
+   Software and delete all copies.
+
+5. No warranty. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+   KIND, EXPRESS OR IMPLIED, INCLUDING THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+
+6. Limitation of liability. TO THE EXTENT PERMITTED BY LAW, LIQUIDMETAL IS
+   NOT LIABLE FOR ANY DAMAGES ARISING FROM THE SOFTWARE OR ITS USE.
+
+7. Third-party materials. Materials from third parties that ship with the
+   Software (for example, model weights) are under their own terms, listed
+   in the NOTICE file.
+
+Contact: support@liquidmetal.ai

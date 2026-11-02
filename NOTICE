@@ -1,0 +1,96 @@
+Physion
+Copyright (c) 2025-2026 LiquidMetal AI, Inc. All rights reserved.
+Physion is proprietary software. See the LICENSE file.
+
+Robofleet policy model weights (apps/robofleet/tests/fixtures/train/)
+  Original work of LiquidMetal AI, Inc.: base.json and model.json were
+  trained by apps/robofleet/train/train.py on synthetic data. No third-party
+  weights. PyTorch is used only at training time, inside an image built from
+  apps/robofleet/train/Dockerfile; no PyTorch code or weights are included.
+
+Third-party materials
+
+Timestral-5M model weights (share/physion/models/timestral/)
+  Author: Mistral AI. Source: https://github.com/mistralai/timestral
+  The weights are distributed under their own license from the author.
+  Physion's Timestral inference code is an original implementation by
+  LiquidMetal AI, Inc.
+
+NVIDIA DCGM headers (share/physion/feeds/dcgm/vendor/include/)
+  Author: NVIDIA Corporation. Source: https://github.com/NVIDIA/DCGM
+  Licence: Apache-2.0. The licence text is in
+  share/physion/feeds/dcgm/vendor/LICENSE. The files are unchanged copies.
+
+AMD SMI and RDC headers (share/physion/feeds/amd/vendor/include/)
+  Author: Advanced Micro Devices, Inc. Source: https://github.com/ROCm/rocm-systems
+  Licence: MIT. The licence texts are in
+  share/physion/feeds/amd/vendor/LICENSE.amdsmi and LICENSE.rdc. The files
+  are unchanged copies; share/physion/feeds/amd/src/gen/ is generated from
+  them.
+
+DMTF Redfish mockup public-rackmount1 (physion/tests/fixtures/vendor/redfish/public-rackmount1/ in the source tree)
+  Author: DMTF. Source: https://github.com/DMTF/Redfish-Mockup-Server
+  (commit 23d21f9a). Licence: BSD-3-Clause. The licence text is in
+  physion/tests/fixtures/vendor/redfish/public-rackmount1/LICENSE.md. The files
+  are unchanged copies. Only the tests use them; the release packages do not
+  contain them.
+
+AWS signing test suite (share/physion/feeds/cloud/vendor/aws-signing-test-suite/)
+  Author: Amazon.com, Inc. or its affiliates. Source: https://github.com/awslabs/aws-c-auth
+  Licence: Apache-2.0. The licence text is in
+  share/physion/feeds/cloud/vendor/LICENSE and its notice in
+  share/physion/feeds/cloud/vendor/NOTICE.aws-c-auth. The case files are
+  unchanged copies; only the cloud feed's tests read them.
+Level Zero API declarations (share/physion/feeds/intel/vendor/include/)
+  Author: Intel Corporation. Source: https://github.com/oneapi-src/level-zero
+  Licence: MIT. The licence text is in
+  share/physion/feeds/intel/vendor/LICENSE.level-zero. ze_subset.h keeps only
+  the declarations the Intel feed uses; their layouts and values are the
+  vendor's.
+Recorded ipmitool outputs (share/physion/feeds/ipmi/vendor/ipmitool-outputs/)
+  Author: InfluxData Inc. (the ipmi_sensor input tests of telegraf). Source:
+  https://github.com/influxdata/telegraf. Licence: MIT. The licence text is
+  in share/physion/feeds/ipmi/vendor/ipmitool-outputs/LICENSE.telegraf. The
+  files are unchanged copies of the test outputs.
+
+
+toml-test cases (physion/tests/fixtures/vendor/toml-test/ in the source tree)
+  Author: the toml-test contributors. Source: https://github.com/toml-lang/toml-test
+  Licence: MIT. The licence text is in
+  physion/tests/fixtures/vendor/toml-test/LICENSE. The case files are unchanged
+  data. Only the tests use them; the release packages do not contain them.
+
+Redfish mockups (physion/feeds/redfish/tests/vendor/mockups/ in the source tree)
+  Slices of public Redfish mockups, unchanged files: DMTF Redfish-Publications
+  (https://github.com/DMTF/Redfish-Publications, BSD-3-Clause, LICENSE.DMTF),
+  the HPE iLO Redfish emulator (https://github.com/HewlettPackard/ilo-redfish-emulator,
+  BSD-3-Clause, LICENSE.HPE) and the Supermicro GB300 fixtures of redfish_ctl
+  (https://github.com/spyroot/redfish_ctl, MIT, LICENSE.redfish_ctl). The licence
+  texts are in that directory. Only the tests use them; the release leaves out
+  feeds/*/tests, so share/physion/feeds/redfish/tests/vendor/ is not shipped.
+
+JavaScript browser bundle (share/physion/clients/js/physion-client-browser.bundle.js)
+  Contains buffer and base64-js (MIT License) and ieee754 (BSD-3-Clause
+  License), by Feross Aboukhadijeh and contributors.
+
+ROS 2 message definitions (share/physion/lib/mcap.q, .mcap.defs)
+  Authors: Open Source Robotics Foundation and the ROS 2 contributors.
+  Source: https://github.com/ros2/common_interfaces, https://github.com/ros2/rcl_interfaces,
+  https://github.com/ros2/geometry2 (ROS 2 Kilted .msg files).
+  Licence: Apache-2.0 (std_msgs, geometry_msgs, sensor_msgs, nav_msgs, diagnostic_msgs,
+  builtin_interfaces) and BSD-3-Clause (tf2_msgs). The field lines are copied with the
+  comments removed.
+
+Ryu shortest float text (physion/physion_fmtfloat.c, physion/physion_fmtfloat_table.h)
+  Author: Ulf Adams. Source: https://github.com/ulfjack/ryu
+  Licence: Boost Software License 1.0 (the project is also offered under
+  Apache-2.0). The fast path of -61! follows ryu/d2s.c; the licence text is in
+  physion/vendor/ryu/ in the source tree (LICENSE; share/physion/vendor/ryu/
+  is not in the release packages, which carry only the compiled code).
+
+TweetNaCl Ed25519 verification (physion/physion_ed25519.c)
+  Authors: Daniel J. Bernstein, Bernard van Gastel, Wesley Janssen, Tanja
+  Lange, Peter Schwabe and Sjaak Smetsers. Source: https://tweetnacl.cr.yp.to/
+  (20140427). Licence: public domain. The advisory licence check verifies
+  licence files with its Ed25519 verification path; the statement is in
+  physion/vendor/tweetnacl/LICENSE in the source tree.

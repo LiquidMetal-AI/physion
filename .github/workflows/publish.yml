@@ -1,0 +1,200 @@
+name: Publish a release
+
+# A release starts as a draft. The release build creates the draft release,
+# uploads its files, pushes the container images and the Helm chart to
+# ghcr.io, and then starts this workflow with the tag.
+#
+# This workflow:
+#   1. downloads the files of the draft release,
+#   2. checks them against SHA256SUMS,
+#   3. attests each file and each image and chart digest (SLSA build
+#      provenance, and the SBOM for the files), signed with Sigstore,
+#   4. publishes the release.
+#
+# GitHub does not start workflows when a draft release is created, so the
+# release build starts this one with workflow_dispatch. You can also start it
+# by hand: Actions > Publish a release > Run workflow, with the tag.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'The tag of the draft release, such as v1.2.3'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ inputs.tag }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io/liquidmetal-ai
+
+jobs:
+  publish:
+    name: Verify, attest and publish ${{ inputs.tag }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write # read the draft, upload the attestation bundles, publish
+      id-token: write # the Sigstore signing certificate
+      attestations: write # store the attestations
+      packages: write # attach the image and chart attestations in ghcr.io
+    env:
+      TAG: ${{ inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Check the tag and the draft release
+        id: draft
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::the tag '$TAG' is not vX.Y.Z"
+            exit 1
+          fi
+          V="${TAG#v}"
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          draft="$(gh release view "$TAG" --repo "$REPO" --json isDraft --jq .isDraft)"
+          if [ "$draft" != true ]; then
+            echo "::notice::the release $TAG is already published; nothing to do"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download the release files
+        if: steps.draft.outputs.skip == 'false'
+        run: |
+          set -eu
+          gh release download "$TAG" --repo "$REPO" --dir dist
+          ls -l dist
+
+      - name: Check every file against SHA256SUMS
+        if: steps.draft.outputs.skip == 'false'
+        id: sums
+        shell: bash
+        env:
+          V: ${{ steps.draft.outputs.version }}
+        run: |
+          set -euo pipefail
+          cd dist
+          test -f SHA256SUMS || { echo "::error::the release has no SHA256SUMS"; exit 1; }
+          for f in "physion-$V-linux-x86_64.tar.gz" "physion-$V-linux-aarch64.tar.gz" "physion-$V-darwin-universal.tar.gz" "physion-$V.spdx.json"; do
+            test -f "$f" || { echo "::error::the release has no $f"; exit 1; }
+          done
+          # every file but SHA256SUMS is listed, and matches its line
+          : > ../present.sha256
+          for f in *; do
+            [ "$f" = SHA256SUMS ] && continue
+            line="$(awk -v f="$f" '$2 == f || $2 == "*" f' SHA256SUMS)"
+            [ -n "$line" ] || { echo "::error::$f is not in SHA256SUMS"; exit 1; }
+            printf '%s\n' "$line" >> ../present.sha256
+          done
+          sha256sum --check --strict ../present.sha256
+          echo "files=$(wc -l < ../present.sha256)" >> "$GITHUB_OUTPUT"
+
+      - name: Find the image and chart digests in ghcr.io
+        if: steps.draft.outputs.skip == 'false'
+        id: images
+        shell: bash
+        env:
+          V: ${{ steps.draft.outputs.version }}
+        run: |
+          set -euo pipefail
+          # digest NAME: the manifest digest of $REGISTRY/NAME:$V, or nothing
+          digest() {
+            local name="${REGISTRY#ghcr.io/}/$1" token
+            token="$(curl -fsS -u "x:$GH_TOKEN" "https://ghcr.io/token?service=ghcr.io&scope=repository:$name:pull" | jq -r .token)" || return 0
+            curl -fsS -o /dev/null -D - \
+              -H "Authorization: Bearer $token" \
+              -H 'Accept: application/vnd.oci.image.index.v1+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json' \
+              "https://ghcr.io/v2/$name/manifests/$V" 2>/dev/null \
+              | tr -d '\r' | awk -F': ' 'tolower($1) == "docker-content-digest" { print $2 }' || true
+          }
+          physion="$(digest physion)"
+          gpumon="$(digest gpumon)"
+          chart="$(digest charts/gpumon)"
+          [ -n "$physion" ] || { echo "::error::$REGISTRY/physion:$V is not in ghcr.io"; exit 1; }
+          [ -n "$gpumon" ] || echo "::notice::no $REGISTRY/gpumon:$V: no GPU Monitor image to attest"
+          [ -n "$chart" ] || echo "::notice::no $REGISTRY/charts/gpumon:$V: no chart to attest"
+          for d in "$physion" "$gpumon" "$chart"; do
+            [ -z "$d" ] || [[ "$d" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "::error::bad digest '$d'"; exit 1; }
+          done
+          {
+            echo "physion=$physion"
+            echo "gpumon=$gpumon"
+            echo "chart=$chart"
+          } >> "$GITHUB_OUTPUT"
+          echo "physion $physion; gpumon ${gpumon:-none}; chart ${chart:-none}"
+
+      # The attestations. Each one is an in-toto statement signed with a
+      # short-lived Sigstore certificate for this workflow, and is written to
+      # the public Sigstore transparency log. PUBLISHING.md lists every field.
+      - name: Build provenance attestation (every file)
+        if: steps.draft.outputs.skip == 'false'
+        id: provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-checksums: present.sha256
+      - name: SBOM attestation (every file)
+        if: steps.draft.outputs.skip == 'false'
+        id: sbom
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-checksums: present.sha256
+          sbom-path: dist/physion-${{ steps.draft.outputs.version }}.spdx.json
+      - name: Build provenance attestation (the physion image)
+        if: steps.draft.outputs.skip == 'false'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ env.REGISTRY }}/physion
+          subject-digest: ${{ steps.images.outputs.physion }}
+          push-to-registry: true
+          create-storage-record: false
+      - name: Build provenance attestation (the GPU Monitor image)
+        if: steps.draft.outputs.skip == 'false' && steps.images.outputs.gpumon != ''
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ env.REGISTRY }}/gpumon
+          subject-digest: ${{ steps.images.outputs.gpumon }}
+          push-to-registry: true
+          create-storage-record: false
+      - name: Build provenance attestation (the Helm chart)
+        if: steps.draft.outputs.skip == 'false' && steps.images.outputs.chart != ''
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ env.REGISTRY }}/charts/gpumon
+          subject-digest: ${{ steps.images.outputs.chart }}
+          push-to-registry: true
+          create-storage-record: false
+
+      - name: Check one attestation as a user would
+        if: steps.draft.outputs.skip == 'false'
+        env:
+          V: ${{ steps.draft.outputs.version }}
+        run: gh attestation verify "dist/physion-$V-linux-x86_64.tar.gz" --repo "$REPO"
+
+      - name: Attach the attestation bundles and publish the release
+        if: steps.draft.outputs.skip == 'false'
+        shell: bash
+        env:
+          V: ${{ steps.draft.outputs.version }}
+          PROVENANCE: ${{ steps.provenance.outputs.bundle-path }}
+          SBOM_BUNDLE: ${{ steps.sbom.outputs.bundle-path }}
+        run: |
+          set -euo pipefail
+          cp "$PROVENANCE" "physion-$V.provenance.sigstore.jsonl"
+          cp "$SBOM_BUNDLE" "physion-$V.sbom.sigstore.jsonl"
+          gh release upload "$TAG" --repo "$REPO" --clobber \
+            "physion-$V.provenance.sigstore.jsonl" "physion-$V.sbom.sigstore.jsonl"
+          if [[ "$V" == *-* ]]; then
+            gh release edit "$TAG" --repo "$REPO" --draft=false --prerelease
+          else
+            gh release edit "$TAG" --repo "$REPO" --draft=false --latest
+          fi
+          echo "published $TAG: $(gh release view "$TAG" --repo "$REPO" --json url --jq .url)" >> "$GITHUB_STEP_SUMMARY"
