@@ -148,6 +148,15 @@ jobs:
         with:
           subject-checksums: present.sha256
           sbom-path: dist/physion-${{ steps.draft.outputs.version }}.spdx.json
+      # push-to-registry writes the attestation into ghcr.io next to the image:
+      # it needs a login (packages: write, and the package must give this
+      # repository Write in "Manage Actions access").
+      - name: Log in to ghcr.io (the image and chart attestations)
+        if: steps.draft.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ACTOR: ${{ github.actor }}
+        run: printf '%s' "$GH_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
       - name: Build provenance attestation (the physion image)
         if: steps.draft.outputs.skip == 'false'
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
