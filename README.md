@@ -15,8 +15,8 @@ Each release has these files:
 
 | File | Contents |
 |---|---|
-| `physion-VERSION-linux-x86_64.tar.gz` | Linux on x86_64, glibc 2.28 or later |
-| `physion-VERSION-linux-aarch64.tar.gz` | Linux on aarch64 (arm64), glibc 2.28 or later |
+| `physion-VERSION-linux-x86_64.tar.gz` | Linux on x86_64, glibc 2.34 or later |
+| `physion-VERSION-linux-aarch64.tar.gz` | Linux on aarch64 (arm64), glibc 2.34 or later |
 | `physion-VERSION-darwin-arm64.tar.gz` | macOS: Apple Silicon (arm64), macOS 15 or later |
 | `physion-min-VERSION-PLATFORM.tar.gz` | The small binary and the standard library only |
 | `physion-VERSION.spdx.json` | The SBOM (SPDX 2.3) of every tarball |
