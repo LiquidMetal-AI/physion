@@ -19,6 +19,8 @@ Each release has these files:
 | `physion-VERSION-linux-aarch64.tar.gz` | Linux on aarch64 (arm64), glibc 2.34 or later |
 | `physion-VERSION-darwin-arm64.tar.gz` | macOS: Apple Silicon (arm64), macOS 15 or later |
 | `physion-min-VERSION-PLATFORM.tar.gz` | The small binary and the standard library only |
+| `physion_VERSION-1_ARCH.deb` and `physion-VERSION-1.ARCH.rpm` | Linux packages for `physion`, and beside them `physion-gpumon` and `physion-idrac` (the system services) |
+| `physion-image-VERSION-linux-ARCH.tar.gz` | The `physion` container image as an archive that `docker load` reads |
 | `physion-VERSION.spdx.json` | The SBOM (SPDX 2.3) of every tarball |
 | `SHA256SUMS` | The SHA-256 of every file |
 | `physion-VERSION.provenance.sigstore.jsonl` | The build provenance attestations |
@@ -38,11 +40,13 @@ physion --version
 ```sh
 docker pull ghcr.io/liquidmetal-ai/physion:1.2.3
 docker pull ghcr.io/liquidmetal-ai/gpumon:1.2.3
+docker pull ghcr.io/liquidmetal-ai/idrac:1.2.3
 helm install gpumon oci://ghcr.io/liquidmetal-ai/charts/gpumon --version 1.2.3
+helm install idrac oci://ghcr.io/liquidmetal-ai/charts/idrac --version 1.2.3
 ```
 
 Each image holds the unpacked Linux tarball for `amd64` and `arm64`.
-The chart runs GPU Monitor from the `gpumon` image.
+The `gpumon` chart runs GPU Monitor from the `gpumon` image, and the `idrac` chart runs Physion iDRAC from the `idrac` image.
 
 ## Verify a download
 
@@ -61,7 +65,9 @@ Check it with the GitHub CLI (`gh`, version 2.49 or later):
 gh attestation verify physion-1.2.3-linux-x86_64.tar.gz --repo LiquidMetal-AI/physion
 gh attestation verify oci://ghcr.io/liquidmetal-ai/physion:1.2.3 --repo LiquidMetal-AI/physion
 gh attestation verify oci://ghcr.io/liquidmetal-ai/gpumon:1.2.3 --repo LiquidMetal-AI/physion
+gh attestation verify oci://ghcr.io/liquidmetal-ai/idrac:1.2.3 --repo LiquidMetal-AI/physion
 gh attestation verify oci://ghcr.io/liquidmetal-ai/charts/gpumon:1.2.3 --repo LiquidMetal-AI/physion
+gh attestation verify oci://ghcr.io/liquidmetal-ai/charts/idrac:1.2.3 --repo LiquidMetal-AI/physion
 ```
 
 Without a network connection, use the bundle from the release:

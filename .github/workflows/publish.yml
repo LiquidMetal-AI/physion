@@ -118,19 +118,25 @@ jobs:
           }
           physion="$(digest physion)"
           gpumon="$(digest gpumon)"
+          idrac="$(digest idrac)"
           chart="$(digest charts/gpumon)"
+          idracchart="$(digest charts/idrac)"
           [ -n "$physion" ] || { echo "::error::$REGISTRY/physion:$V is not in ghcr.io"; exit 1; }
           [ -n "$gpumon" ] || echo "::notice::no $REGISTRY/gpumon:$V: no GPU Monitor image to attest"
+          [ -n "$idrac" ] || echo "::notice::no $REGISTRY/idrac:$V: no Physion iDRAC image to attest"
           [ -n "$chart" ] || echo "::notice::no $REGISTRY/charts/gpumon:$V: no chart to attest"
-          for d in "$physion" "$gpumon" "$chart"; do
+          [ -n "$idracchart" ] || echo "::notice::no $REGISTRY/charts/idrac:$V: no Physion iDRAC chart to attest"
+          for d in "$physion" "$gpumon" "$idrac" "$chart" "$idracchart"; do
             [ -z "$d" ] || [[ "$d" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "::error::bad digest '$d'"; exit 1; }
           done
           {
             echo "physion=$physion"
             echo "gpumon=$gpumon"
+            echo "idrac=$idrac"
             echo "chart=$chart"
+            echo "idracchart=$idracchart"
           } >> "$GITHUB_OUTPUT"
-          echo "physion $physion; gpumon ${gpumon:-none}; chart ${chart:-none}"
+          echo "physion $physion; gpumon ${gpumon:-none}; idrac ${idrac:-none}; chart ${chart:-none}; idracchart ${idracchart:-none}"
 
       # The attestations. Each one is an in-toto statement signed with a
       # short-lived Sigstore certificate for this workflow, and is written to
@@ -173,12 +179,28 @@ jobs:
           subject-digest: ${{ steps.images.outputs.gpumon }}
           push-to-registry: true
           create-storage-record: false
+      - name: Build provenance attestation (the Physion iDRAC image)
+        if: steps.draft.outputs.skip == 'false' && steps.images.outputs.idrac != ''
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ env.REGISTRY }}/idrac
+          subject-digest: ${{ steps.images.outputs.idrac }}
+          push-to-registry: true
+          create-storage-record: false
       - name: Build provenance attestation (the Helm chart)
         if: steps.draft.outputs.skip == 'false' && steps.images.outputs.chart != ''
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ${{ env.REGISTRY }}/charts/gpumon
           subject-digest: ${{ steps.images.outputs.chart }}
+          push-to-registry: true
+          create-storage-record: false
+      - name: Build provenance attestation (the Physion iDRAC Helm chart)
+        if: steps.draft.outputs.skip == 'false' && steps.images.outputs.idracchart != ''
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ env.REGISTRY }}/charts/idrac
+          subject-digest: ${{ steps.images.outputs.idracchart }}
           push-to-registry: true
           create-storage-record: false
 
